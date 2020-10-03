@@ -8,7 +8,7 @@ const argv = require('minimist')(process.argv.slice(2));
  * Config
  * Get propery names
  */
-function getPropertyName() {
+function getArgsName() {
     return {
         a: "a",
         action: "action",
@@ -29,8 +29,6 @@ function getArgsValues() {
     return {
         encode: "encode",
         decode: "decode",
-        input: "input.txt",
-        output: "output.txt"
     };
 }
 
@@ -50,10 +48,109 @@ function getMessage() {
 /**********************************************************/
 
 function start() {
-    const requaredArgs = getRequiredArgs();
-    if (!requaredArgs) stopScript(true, getMessage().invalidRequaredParameters);
+    const requaredArgs = checkGetRequiredArgs();
+    const optionalArgs = getOptionalArgs();
+
+    if (!requaredArgs) {
+        stopScript(true, getMessage().invalidRequaredParameters);
+    }
+
     console.log("requaredArgs = ", requaredArgs);
+    console.log("optionalArgs = ", optionalArgs);
     return;
+}
+
+/**
+ * Return Obj like {input: "./input.txt", output: "./output.txt"}
+ * 
+ * @returns {Object}
+ */
+function getOptionalArgs() {
+    if (!argv) return false;
+
+    const args = getArgsKey().filter(key => {
+        return key === getArgsName().i ||
+            key === getArgsName().input ||
+            key === getArgsName().o ||
+            key === getArgsName().output;
+    });
+
+    let i;
+    let o;
+    const res = {};
+
+    // get input
+    if (
+        !i &&
+        args.includes(getArgsName().i) &&
+        Array.isArray(argv[getArgsName().i]) &&
+        argv[getArgsName().i].length
+    ) {
+        i = argv[getArgsName().i][0];
+    }
+    if (
+        !i &&
+        args.includes(getArgsName().i) &&
+        (argv[getArgsName().i] !== false && argv[getArgsName().i] !== true)
+    ) {
+        i = argv[getArgsName().i];
+    }
+    if (
+        !i &&
+        args.includes(getArgsName().input) &&
+        Array.isArray(argv[getArgsName().input]) &&
+        argv[getArgsName().input].length
+    ) {
+        i = argv[getArgsName().input][0];
+    }
+    if (
+        !i &&
+        args.includes(getArgsName().input) &&
+        (argv[getArgsName().input] !== false && argv[getArgsName().input] !== true)
+    ) {
+        i = argv[getArgsName().input];
+    }
+
+    // get output
+    if (
+        !o &&
+        args.includes(getArgsName().o) &&
+        Array.isArray(argv[getArgsName().o]) &&
+        argv[getArgsName().o].length
+    ) {
+        o = argv[getArgsName().o][0];
+    }
+    if (
+        !o &&
+        args.includes(getArgsName().o) &&
+        (argv[getArgsName().o] !== false && argv[getArgsName().o] !== true)
+    ) {
+        o = argv[getArgsName().o];
+    }
+    if (
+        !o &&
+        args.includes(getArgsName().output) &&
+        Array.isArray(argv[getArgsName().inoutputput]) &&
+        argv[getArgsName().output].length
+    ) {
+        o = argv[getArgsName().output][0];
+    }
+    if (
+        !o &&
+        args.includes(getArgsName().output) &&
+        (argv[getArgsName().output] !== false && argv[getArgsName().output] !== true)
+    ) {
+        o = argv[getArgsName().output];
+    }
+    
+    if (i) {
+        res.i = i;
+    }
+    if (o) {
+        res.o = o;
+    }
+
+    return res;
 }
 
 /**
@@ -62,18 +159,18 @@ function start() {
  * 
  * @returns {Object|Bool}
  */
-function getRequiredArgs() {
+function checkGetRequiredArgs() {
     if (!argv) return false;
     const args = getArgsKey().filter(key => {
-        return key === getPropertyName().a ||
-            key === getPropertyName().action ||
-            key === getPropertyName().s ||
-            key === getPropertyName().shift;
+        return key === getArgsName().a ||
+            key === getArgsName().action ||
+            key === getArgsName().s ||
+            key === getArgsName().shift;
     });
 
     if (
-        (args.includes(getPropertyName().a) || args.includes(getPropertyName().action)) &&
-        (args.includes(getPropertyName().s) || args.includes(getPropertyName().shift))
+        (args.includes(getArgsName().a) || args.includes(getArgsName().action)) &&
+        (args.includes(getArgsName().s) || args.includes(getArgsName().shift))
     ) {
         let a;
         let s;
@@ -81,67 +178,67 @@ function getRequiredArgs() {
         // get action
         if (
             !a &&
-            argv[getPropertyName().a] &&
-            (argv[getPropertyName().a] === getArgsValues().encode || argv[getPropertyName().a] === getArgsValues().decode)
+            argv[getArgsName().a] &&
+            (argv[getArgsName().a] === getArgsValues().encode || argv[getArgsName().a] === getArgsValues().decode)
         ) {
-            a = argv[getPropertyName().a];
+            a = argv[getArgsName().a];
         }
         if (
             !a &&
-            argv[getPropertyName().action] &&
-            (argv[getPropertyName().action] === getArgsValues().encode || argv[getPropertyName().action] === getArgsValues().decode)
+            argv[getArgsName().action] &&
+            (argv[getArgsName().action] === getArgsValues().encode || argv[getArgsName().action] === getArgsValues().decode)
         ) {
-            a = argv[getPropertyName().action];
+            a = argv[getArgsName().action];
         }
         if (
             !a &&
-            argv[getPropertyName().a] &&
-            Array.isArray(argv[getPropertyName().a]) &&
-            (argv[getPropertyName().a].includes(getArgsValues().encode) || argv[getPropertyName().a].includes(getArgsValues().decode))
+            argv[getArgsName().a] &&
+            Array.isArray(argv[getArgsName().a]) &&
+            (argv[getArgsName().a].includes(getArgsValues().encode) || argv[getArgsName().a].includes(getArgsValues().decode))
         ) {
-            a = argv[getPropertyName().a];
+            a = argv[getArgsName().a];
         }
         if (
             !a &&
-            argv[getPropertyName().action] &&
-            Array.isArray(argv[getPropertyName().action]) &&
-            (argv[getPropertyName().action].includes(getArgsValues().encode) || argv[getPropertyName().action].includes(getArgsValues().decode))
+            argv[getArgsName().action] &&
+            Array.isArray(argv[getArgsName().action]) &&
+            (argv[getArgsName().action].includes(getArgsValues().encode) || argv[getArgsName().action].includes(getArgsValues().decode))
         ) {
-            a = argv[getPropertyName().action];
+            a = argv[getArgsName().action];
         }
 
         // get shift
         if (
             !s &&
-            argv[getPropertyName().s] &&
-            Array.isArray(argv[getPropertyName().s]) &&
-            argv[getPropertyName().s].length &&
-            argv[getPropertyName().s].find(s => Number.parseInt(s))
+            argv[getArgsName().s] &&
+            Array.isArray(argv[getArgsName().s]) &&
+            argv[getArgsName().s].length &&
+            argv[getArgsName().s].find(s => Number.parseInt(s))
         ) {
-            s = argv[getPropertyName().s].find(s => Number.parseInt(s));
+            s = argv[getArgsName().s].find(s => Number.parseInt(s));
             s = Number.parseInt(s);
         }
         if (
             !s &&
-            argv[getPropertyName().shift] &&
-            Array.isArray(argv[getPropertyName().shift]) &&
-            argv[getPropertyName().shift].length &&
-            argv[getPropertyName().shift].find(shift => Number.parseInt(shift))
+            argv[getArgsName().shift] &&
+            Array.isArray(argv[getArgsName().shift]) &&
+            argv[getArgsName().shift].length &&
+            argv[getArgsName().shift].find(shift => Number.parseInt(shift))
         ) {
-            s = argv[getPropertyName().shift].find(shift => Number.parseInt(shift));
+            s = argv[getArgsName().shift].find(shift => Number.parseInt(shift));
             s = Number.parseInt(s);
         }
         if (
             !s &&
-            argv[getPropertyName().s] && Number.parseInt(argv[getPropertyName().s])
+            argv[getArgsName().s] && Number.parseInt(argv[getArgsName().s])
         ) {
-            s = Number.parseInt(argv[getPropertyName().s]);
+            s = Number.parseInt(argv[getArgsName().s]);
         }
         if (
             !s &&
-            argv[getPropertyName().shift] && Number.parseInt(argv[getPropertyName().shift])
+            argv[getArgsName().shift] && Number.parseInt(argv[getArgsName().shift])
         ) {
-            s = Number.parseInt(argv[getPropertyName().shift]);
+            s = Number.parseInt(argv[getArgsName().shift]);
         }
 
         if (a && s) {
