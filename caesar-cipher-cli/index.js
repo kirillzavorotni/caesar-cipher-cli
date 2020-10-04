@@ -34,19 +34,37 @@ function getArgsValues() {
 
 /**
  * Config
+ * Get list of alfabets
+ */
+function getAlfabetsAsListOfArray() {
+    return [
+        ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'],
+        ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
+    ]
+}
+
+/**
+ * Config
  * Get messages
  */
 function getMessage() {
     return {
         somethingWentWrong: "Something went wrong.",
-        invalidRequaredParameters: "Invalid requared parameters. -s/--shift[number] and -a/--action[string] parameters are requared."
+        invalidRequaredParameters: "Invalid requared parameters. -s/--shift[number not 0][--shift=-2 or -s=-2] and -a/--action[string] parameters are requared."
     };
 }
 
 
 
+start();
+
+
+
 /**********************************************************/
 
+/**
+ * Entry point
+ */
 function start() {
     const requaredArgs = checkGetRequiredArgs();
     const optionalArgs = getOptionalArgs();
@@ -55,9 +73,122 @@ function start() {
         stopScript(true, getMessage().invalidRequaredParameters);
     }
 
-    console.log("requaredArgs = ", requaredArgs);
-    console.log("optionalArgs = ", optionalArgs);
+    // console.log("requaredArgs = ", requaredArgs);
+    // console.log("optionalArgs = ", optionalArgs);
+
+    const shift = requaredArgs[getArgsName().s];
+    const res = getShiftedCharactersAsString(
+        getAlfabetsAsListOfArray(),
+        optionalArgs[getArgsName().i],
+        shift
+    );
+
+    console.log(res);
+
     return;
+}
+
+/**
+ * 
+ * @param {Array} alfaberArrayList 
+ * @param {String} str 
+ * @param {Number} shift 
+ */
+function getShiftedCharactersAsString(alfaberArrayList = [], str = "...", shift = 0) {
+    const result = [];
+
+    str.split("").forEach(char => {
+        const res = getShiftedCharacter(alfaberArrayList, shift, char);
+        if (!res) {
+            stopScript();
+        }
+        result.push(res);
+    });
+
+    return result.join("");
+}
+
+/**
+ * 
+ * @param {Array} alfArrList list of alfabet arrays 
+ * @param {Number} shiftNum 
+ * @param {String} curVal 
+ * @returns {String|Number|Boolean}
+ */
+function getShiftedCharacter(alfArrList, shiftNum, curVal) {
+    if (
+        !alfArrList ||
+        !alfArrList.length ||
+        !Number.isInteger(shiftNum) ||
+        !curVal
+    ) {
+        return false;
+    }
+
+    const alfArr = alfArrList.find(arr => {
+        if (arr.includes(curVal)) {
+            return true;
+        }
+    });
+
+    if (!alfArr) {
+        return curVal;
+    }
+    
+    const index = alfArr.indexOf(curVal);
+    
+    if (index === -1) {
+        return false;
+    }
+    
+    if (alfArr[index+shiftNum]) {
+        return alfArr[index+shiftNum];
+    }
+    
+    let i = index;
+    let j = shiftNum;
+    
+    if (shiftNum >= 0) {
+        while(j >= 0) {
+            if (j === 0) {
+                return alfArr[i];
+            }
+
+            if (!alfArr[i+1]) {
+                i = 0;
+            } else {
+                i++;
+            }
+
+            j--;
+        }
+    
+    return alfArr[i];
+        
+    }
+    
+    if (shiftNum < 0) {
+        
+        while(j <= 0) {
+            if (j === 0) {
+                return alfArr[i];
+            }
+
+            if (!alfArr[i-1]) {
+                i = alfArr.length - 1;
+            } else {
+                i--;
+            }
+
+            j++;
+            
+        }
+    
+    return alfArr[i];
+        
+    }
+    
+    return false;
 }
 
 /**
@@ -143,11 +274,11 @@ function getOptionalArgs() {
         o = argv[getArgsName().output];
     }
     
-    if (i) {
-        res.i = i;
+    if (i === 0 || i) {
+        res.i = i.toString();
     }
-    if (o) {
-        res.o = o;
+    if (o === 0 || o) {
+        res.o = o.toString();
     }
 
     return res;
@@ -167,6 +298,9 @@ function checkGetRequiredArgs() {
             key === getArgsName().s ||
             key === getArgsName().shift;
     });
+
+    // console.log(args);
+    // console.log(argv);
 
     if (
         (args.includes(getArgsName().a) || args.includes(getArgsName().action)) &&
@@ -213,9 +347,9 @@ function checkGetRequiredArgs() {
             argv[getArgsName().s] &&
             Array.isArray(argv[getArgsName().s]) &&
             argv[getArgsName().s].length &&
-            argv[getArgsName().s].find(s => Number.parseInt(s))
+            argv[getArgsName().s].find(s => Number.parseInt(s) === 0 || Number.parseInt(s) === -0 || Number.parseInt(s))
         ) {
-            s = argv[getArgsName().s].find(s => Number.parseInt(s));
+            s = argv[getArgsName().s].find(s => Number.parseInt(s) === 0 || Number.parseInt(s) === -0 || Number.parseInt(s));
             s = Number.parseInt(s);
         }
         if (
@@ -223,25 +357,25 @@ function checkGetRequiredArgs() {
             argv[getArgsName().shift] &&
             Array.isArray(argv[getArgsName().shift]) &&
             argv[getArgsName().shift].length &&
-            argv[getArgsName().shift].find(shift => Number.parseInt(shift))
+            argv[getArgsName().shift].find(shift => Number.parseInt(shift) === 0 || Number.parseInt(shift) === -0 || Number.parseInt(shift))
         ) {
-            s = argv[getArgsName().shift].find(shift => Number.parseInt(shift));
+            s = argv[getArgsName().shift].find(shift => Number.parseInt(shift) === 0 || Number.parseInt(shift) === -0 || Number.parseInt(shift));
             s = Number.parseInt(s);
         }
         if (
             !s &&
-            argv[getArgsName().s] && Number.parseInt(argv[getArgsName().s])
+            Number.parseInt(argv[getArgsName().s]) === 0 || Number.parseInt(argv[getArgsName().s]) === -0 || Number.parseInt(argv[getArgsName().s])
         ) {
             s = Number.parseInt(argv[getArgsName().s]);
         }
         if (
             !s &&
-            argv[getArgsName().shift] && Number.parseInt(argv[getArgsName().shift])
+            Number.parseInt(argv[getArgsName().shift]) === 0 || Number.parseInt(argv[getArgsName().shift]) === -0 || Number.parseInt(argv[getArgsName().shift])
         ) {
             s = Number.parseInt(argv[getArgsName().shift]);
         }
 
-        if (a && s) {
+        if (a && (s === 0 || s === -0 || s)) {
             return {
                 a: a,
                 s: s
@@ -275,5 +409,3 @@ function stopScript(
     }
     process.exit(errCode);
 }
-
-start();
