@@ -3,10 +3,6 @@ const fs = require('fs');
 const path = require('path');
 const stream = require('stream');
 
-// console.log(argv);
-// console.error('Something went wrong. Error code:', 1);
-// process.exit(1);
-
 /**
  * Config
  * Get propery names
@@ -103,9 +99,6 @@ function whatToDo(param) {
         param.s = param.s * -1;
     }
 
-    console.log("param = ", param);
-    // return;
-
     // if input to output file
     if (param.a && Number.isInteger(param.s) && param.i && param.o) {
         if (!checkFileExists(param.i)) {
@@ -128,12 +121,69 @@ function whatToDo(param) {
         }
 
         fileToFile(param);
-        return;
     }
+
+    // if input but not out file
+    if (param.a && Number.isInteger(param.s) && param.i && !param.o) {
+        if (!checkFileExists(param.i)) {
+            stopScript(true, `"${param.i}" ${getMessage().fileNotExists}`);
+        }
+        if (!checkFileReadeble(param.i)) {
+            stopScript(true, `"${param.i}" ${getMessage().accessDined}`);
+        }
+        if (!isFile(param.i)) {
+            stopScript(true, `"${param.i}" ${getMessage().isNotFile}`);
+        }
+
+        fileToStdOut(param);
+    }
+
+    // if input and output aren't exists
+    if (param.a && Number.isInteger(param.s) && !param.i && !param.o) {
+        stdInToStdOut(param);
+    }
+
+    // if output file exists but not input file
+    if (param.a && Number.isInteger(param.s) && param.o && !param.i) {
+        if (!checkFileExists(param.o)) {
+            stopScript(true, `"${param.o}" ${getMessage().fileNotExists}`);
+        }
+        if (!checkFileWriteble(param.o)) {
+            stopScript(true, `"${param.o}" ${getMessage().accessDined}`);
+        }
+        if (!isFile(param.o)) {
+            stopScript(true, `"${param.o}" ${getMessage().isNotFile}`);
+        }
+
+        stdInToFile(param);
+    }
+}
+
+function stdInToStdOut(param) {
+    const read = process.stdin;
+    read.setEncoding('utf8');
+    const transform = new CipherTransformer(param.s);
+    const write = process.stdout;
+    read.pipe(transform).pipe(write);
 }
 
 function fileToFile(param) {
     const read = fs.createReadStream(param.i);
+    const transform = new CipherTransformer(param.s);
+    const write = fs.createWriteStream(param.o);
+    read.pipe(transform).pipe(write);
+}
+
+function fileToStdOut(param) {
+    const read = fs.createReadStream(param.i);
+    const transform = new CipherTransformer(param.s);
+    const write = process.stdout;
+    read.pipe(transform).pipe(write);
+}
+
+function stdInToFile(param) {
+    const read = process.stdin;
+    read.setEncoding('utf8');
     const transform = new CipherTransformer(param.s);
     const write = fs.createWriteStream(param.o);
     read.pipe(transform).pipe(write);
@@ -377,9 +427,6 @@ function checkGetRequiredArgs() {
             key === getArgsName().s ||
             key === getArgsName().shift;
     });
-
-    // console.log(args);
-    // console.log(argv);
 
     if (
         (args.includes(getArgsName().a) || args.includes(getArgsName().action)) &&
