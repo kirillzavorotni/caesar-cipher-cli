@@ -1,4 +1,7 @@
 const argv = require('minimist')(process.argv.slice(2));
+const fs = require('fs');
+const path = require('path');
+const stream = require('stream');
 
 // console.log(argv);
 // console.error('Something went wrong. Error code:', 1);
@@ -50,15 +53,26 @@ function getAlfabetsAsListOfArray() {
 function getMessage() {
     return {
         somethingWentWrong: "Something went wrong.",
-        invalidRequaredParameters: "Invalid requared parameters. -s/--shift[number not 0][--shift=-2 or -s=-2] and -a/--action[string] parameters are requared."
+        invalidRequaredParameters: "Invalid requared parameters. -s/--shift[--shift=-2 or -s=-2] and -a/--action[-a=encode or --action=decode] parameters are requared.",
+        fileNotExists: "file not exists.",
+        accessDined: "аile access denied.",
+        isNotFile: "is not a file."
     };
 }
 
+class CipherTransformer extends stream.Transform {
+    constructor(shift) {
+        super();
+        this._shift = shift;
+    }
 
+    _transform(data, encoding, callback) {
+        this.push(getShiftedCharactersAsString(getAlfabetsAsListOfArray(), data.toString(), this._shift));
+        callback();
+    }
+}
 
 start();
-
-
 
 /**********************************************************/
 
@@ -73,19 +87,84 @@ function start() {
         stopScript(true, getMessage().invalidRequaredParameters);
     }
 
-    // console.log("requaredArgs = ", requaredArgs);
-    // console.log("optionalArgs = ", optionalArgs);
+    const parameters = {...requaredArgs, ...optionalArgs };
 
-    const shift = requaredArgs[getArgsName().s];
-    const res = getShiftedCharactersAsString(
-        getAlfabetsAsListOfArray(),
-        optionalArgs[getArgsName().i],
-        shift
-    );
+    whatToDo(parameters);
+}
 
-    console.log(res);
+function whatToDo(param) {
+    param.a = param.a ? param.a : "";
+    param.s = Number.isInteger(param.s) ? param.s : "";
+    param.i = param.i ? path.join(__dirname, param.i) : "";
+    param.o = param.o ? path.join(__dirname, param.o) : "";
 
-    return;
+    // check encode or decode
+    if (param.s && param.a && param.a === getArgsValues().decode) {
+        param.s = param.s * -1;
+    }
+
+    console.log("param = ", param);
+    // return;
+
+    // if input to output file
+    if (param.a && Number.isInteger(param.s) && param.i && param.o) {
+        if (!checkFileExists(param.i)) {
+            stopScript(true, `"${param.i}" ${getMessage().fileNotExists}`);
+        }
+        if (!checkFileReadeble(param.i)) {
+            stopScript(true, `"${param.i}" ${getMessage().accessDined}`);
+        }
+        if (!isFile(param.i)) {
+            stopScript(true, `"${param.i}" ${getMessage().isNotFile}`);
+        }
+        if (!checkFileExists(param.o)) {
+            stopScript(true, `"${param.o}" ${getMessage().fileNotExists}`);
+        }
+        if (!checkFileWriteble(param.o)) {
+            stopScript(true, `"${param.o}" ${getMessage().accessDined}`);
+        }
+        if (!isFile(param.o)) {
+            stopScript(true, `"${param.o}" ${getMessage().isNotFile}`);
+        }
+
+        fileToFile(param);
+        return;
+    }
+}
+
+function fileToFile(param) {
+    const read = fs.createReadStream(param.i);
+    const transform = new CipherTransformer(param.s);
+    const write = fs.createWriteStream(param.o);
+    read.pipe(transform).pipe(write);
+}
+
+function checkFileExists(path = "") {
+    try {
+        fs.accessSync(path, fs.constants.F_OK);
+    } catch (err) {
+        return false;
+    }
+    return true;
+}
+function checkFileReadeble(path = "") {
+    try {
+        fs.accessSync(path, fs.constants.R_OK);
+    } catch (err) {
+        return false;
+    }
+    return true;
+}
+function checkFileWriteble(path = "") {
+    try {
+        fs.accessSync(path, fs.constants.W_OK);
+    } catch (err) {
+        return false;
+    }
+    return true;
+}
+function isFile(path = "") {
+    return fs.statSync(path).isFile();
 }
 
 /**
@@ -401,7 +480,7 @@ function getArgsKey() {
  */
 function stopScript(
     isError = true,
-    msg = getMessage().somethingWentWrong ? getMessage().somethingWentWrong : "",
+    msg = getMessage().somethingWentWrong ? getMessage().somethingWentWrong : "Something went wrong",
     errCode = 1
 ) {
     if (isError) {
